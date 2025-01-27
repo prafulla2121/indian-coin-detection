@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indian Coin Counter</title>
+    <link rel="stylesheet" href="../static/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            padding: 20px;
+        }
+        video, canvas {
+            max-width: 100%;
+            border: 2px solid #000;
+            border-radius: 8px;
+        }
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Indian Coin Counter</h1>
+
+    <h2>Camera Capture</h2>
+    <video id="video" autoplay playsinline></video>
+    <br>
+    <button id="captureButton">Capture</button>
+    <br>
+    <canvas id="canvas"></canvas>
+    <button type="button" id="detectFromCapture">Detect Coins</button>
+
+    <h2>Upload Image</h2>
+    <form id="upload-form" enctype="multipart/form-data">
+        <label for="file">Upload Image:</label>
+        <input type="file" id="file" name="file" accept="image/*" capture="environment">
+        <button type="submit">Detect Coins</button>
+    </form>
+
+    <h2>Results</h2>
+    <div id="results">
+        <p>Coin Count: <span id="coin-count"></span></p>
+        <p>Total Value: <span id="total-value"></span></p>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('captureButton');
+        const detectFromCaptureButton = document.getElementById('detectFromCapture');
+        const context = canvas.getContext('2d');
+
+        // Access the camera
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(error => {
+                console.error('Error accessing the camera:', error);
+            });
+
+        // Capture image from the video feed
+        captureButton.addEventListener('click', () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        });
+
+        // Detect coins from the captured image
+        detectFromCaptureButton.addEventListener('click', async () => {
+            canvas.toBlob(async (blob) => {
+                await detectCoins(blob);
+            }, 'image/png');
+        });
+
+        // Handle image upload form
+        const form = document.getElementById("upload-form");
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById("file");
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+
+            const response = await fetch("/detect_coins", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await response.json();
+            displayResults(data);
+        });
+
+        // Reusable function to detect coins
+        async function detectCoins(imageBlob) {
+            const formData = new FormData();
+            formData.append("file", imageBlob, "captured-image.png");
+
+            const response = await fetch("/detect_coins", {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await response.json();
+            displayResults(data);
+        }
+
+        // Function to display results
+        function displayResults(data) {
+            if (data.error) {
+                alert(data.error);
+            } else {
+                document.getElementById("coin-count").textContent = data.coin_count;
+                document.getElementById("total-value").textContent = data.total_value;
+            }
+        }
+    </script>
+</body>
+</html>
