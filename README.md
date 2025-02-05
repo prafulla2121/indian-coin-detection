@@ -48,4 +48,4 @@ https://coin-detection-u4as.onrender.com/
 ### Steps to Run Locally
 1. Clone this repository:
    ```bash
-   git clone https://github.com/prafulla2121/flask-app.git
+   git clone https://github.com/prafulla2121/indian-coin-detection.git
